@@ -1,19 +1,45 @@
-// use serde_json::{Result, Value};
+use parser::Parser;
+use serde_json::Value;
+use wasm_bindgen::prelude::*;
+
+use crate::interperter::Interperter;
+
 pub mod tokenizer;
 pub mod parser;
 pub mod message_formatter;
+pub mod statement;
+pub mod expression;
+pub mod interperter;
+
 /*
-    Grammer rules in Extended Backus–Naur Form (EBNF)
-    statement = template_literal
-                | expression
-                | compound_expression
-    expression = '{{' identifier '}}'
-    compound_expression = '{{' 'for' identifier 'in' identifier '}}' statement '{{' 'end' '}}'
-                        | '{{' 'if' identifier '}}' statement [ '{{' 'else' '}}' ] '{{' 'end' '}}'
-                        | '{{' 
+Grammer rules in Extended Backus–Naur Form (EBNF)
+program = { declaration } 'End'
+declarations = statement
+statement = expression
+expression = '{{' call '}}' | template_literal
+call = identifier { "." identifier }
+
+
+
+
+expression = '{{' identifier '}}'
+compound_expression = '{{' 'for' identifier 'in' identifier '}}' statement '{{' 'end' '}}'
+                    | '{{' 'if' identifier '}}' statement [ '{{' 'else' '}}' ] '{{' 'end' '}}'
+                    | '{{' 
 */
+
+#[wasm_bindgen]
+pub fn render(source: &str, context_json: &str) -> String {
+    let mut statements = Parser::new(source.as_bytes()).parse();
+    let value: Value = serde_json::from_str(context_json).unwrap();
+    let mut interperter = Interperter {context: value, result: String::new()};
+    interperter.interpret(statements);
+    interperter.result
+}
+
 #[derive(PartialEq, Debug, Copy, Clone)]
 enum TokenType {
+    Begin,
     LeftDoubleBrackets,
     RightDoubleBrackets,
     For,
@@ -21,15 +47,16 @@ enum TokenType {
     In,
     When,
     Identifier,
-    StringLiteral,
+    String,
     TempalteLiteral,
-    END
+    Dot,
+    End
 }
 
 #[derive(PartialEq, Debug)]
-pub struct Token<'a> {
+pub struct Token {
     token_type: TokenType,
-    token_value: &'a [u8]
+    token_value: String
 }
 
 #[cfg(test)]
