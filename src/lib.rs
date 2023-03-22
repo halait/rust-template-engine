@@ -13,10 +13,11 @@ pub mod interperter;
 
 /*
 Grammer rules in Extended Backus–Naur Form (EBNF)
-program = { declaration } 'End'
-declarations = statement
+program = { statement } 'End'
 statement = expression
+            | for
 expression = '{{' call '}}' | template_literal
+for = '{{' 'for' identifier 'in' call '}}' statement '{{' 'end' '}}'
 call = identifier { "." identifier }
 
 
