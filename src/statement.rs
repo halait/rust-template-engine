@@ -4,11 +4,12 @@ use crate::expression::{self, VariableExpression, CallExpression, Expression};
 #[derive(Debug)]
 pub enum Statement {
     Expression(expression::Expression),
-    For(),
+    For(ForStatement),
 }
 
-struct ForStatement {
-    instance_identifier: VariableExpression,
-    array_variable: Expression,
-    statements: Vec<Statement>
+#[derive(Debug)]
+pub struct ForStatement {
+    pub instance_identifier: Expression,
+    pub array_variable: Expression,
+    pub statements: Vec<Statement>
 }

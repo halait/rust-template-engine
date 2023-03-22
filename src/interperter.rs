@@ -46,7 +46,15 @@ impl Interperter {
                     }
                 }
             }
-            Statement::For() => todo!(),
+            Statement::For(for_statement) => {
+                let array = self.execute(Statement::Expression(for_statement.array_variable));
+                if !array.is_array() {
+                    panic!("Not array");
+                }
+                for i in array.as_array() {
+                    println!("{:?}", i);
+                }
+            }
         }
         Value::Null
     }
@@ -54,17 +62,18 @@ impl Interperter {
 
 #[cfg(test)]
 mod tests {
-    use crate::{parser::Parser, interperter};
+    use crate::{parser::Parser, interperter, tokenizer::{self, Tokenizer}};
 
     use super::*;
 
     #[test]
     fn it_works() {
-        let mut statements = Parser::new(r#"
-Yoo {{ person.name }} this
-wassup
-"#.as_bytes()).parse();
-        let value: Value = serde_json::from_str(r#"{ "person" : { "name": "Punit" } }"#).unwrap();
+        let mut parser = Parser::new();
+        let mut tokenizer = Tokenizer::new(r#"
+Yoo {{ for i in items }} yes {{ end }}
+"#.as_bytes());
+        let statements = parser.parse(&mut tokenizer);
+        let value: Value = serde_json::from_str(r#"{"items": ["1", "2", "3"]}"#).unwrap();
         //println!("{}", value["name"]);
         let mut interperter = Interperter {context: value, result: String::new()};
         interperter.interpret(statements);

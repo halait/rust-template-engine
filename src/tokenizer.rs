@@ -25,6 +25,7 @@ impl<'a> Tokenizer<'a> {
                 ("in".as_bytes(), TokenType::In),
                 ("when".as_bytes(), TokenType::When),
                 ("if".as_bytes(), TokenType::If),
+                ("end".as_bytes(), TokenType::End),
             ]),
             in_curly: false
         }
@@ -179,40 +180,91 @@ impl<'a> Tokenizer<'a> {
     }
 }
 
+impl Iterator for Tokenizer<'_> {
+    // we will be counting with usize
+    type Item = Token;
+
+    // next() is the only required method
+    fn next(&mut self) -> Option<Self::Item> {
+        // Increment our count. This is why we started at zero.
+        loop {
+            self.token_start = self.i;
+            match self.get_current() {
+                Some(character) => {
+                    if !self.in_curly {
+                        if self.at_curly_start() {
+                            self.in_curly = true;
+                            // skip curly
+                            self.increment();
+                            self.increment();
+                            return Some(self.tokenize(TokenType::LeftDoubleBrackets));
+                        } else {
+                            return Some(self.tokenize_template_string());
+                        }
+                    } else {
+                        if character.is_ascii_alphabetic() {
+                            return Some(self.tokenize_symbol());
+                        } else if character == b'.' {
+                            self.increment();
+                            return Some(self.tokenize(TokenType::Dot));
+                        } else if character == b'}' && self.is_next(b'}') {
+                            self.in_curly = false;
+                            // skip curly
+                            self.increment();
+                            self.increment();
+                            return Some(self.tokenize(TokenType::RightDoubleBrackets));
+                        } else if character == b'"' {
+                            return Some(self.tokenize_string_literal());
+                        } else if character.is_ascii_whitespace() {
+                            self.increment();
+                        } else {
+                            panic!("{}", message_formatter::format(&self.source, self.i, "Invalid character"));
+                        }
+                    }
+                },
+                None => {
+                    return None;
+                }
+            }
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    // #[test]
-    // fn it_works() {
-    //     let mut tokener = Tokenizer::new(
-    //         // r#"hello, {{ name }} yes man {{ "no man" }}{{ for item in items }}{{ if property"#
-    //         r#"hello, {{    person.name}} y {{yes}}{{for item in items}}  a {{ "yes" }} {{ if property}}"#.as_bytes()
-    //     );
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::TempalteLiteral, token_value: "hello, ".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::LeftDoubleBrackets, token_value: "{{".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::Identifier, token_value: "person".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::Dot, token_value: ".".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::Identifier, token_value: "name".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::RightDoubleBrackets, token_value: "}}".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::TempalteLiteral, token_value: " y ".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::LeftDoubleBrackets, token_value: "{{".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::Identifier, token_value: "yes".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::RightDoubleBrackets, token_value: "}}".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::LeftDoubleBrackets, token_value: "{{".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::For, token_value: "for".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::Identifier, token_value: "item".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::In, token_value: "in".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::Identifier, token_value: "items".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::RightDoubleBrackets, token_value: "}}".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::TempalteLiteral, token_value: "  a ".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::LeftDoubleBrackets, token_value: "{{".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::String, token_value: "\"yes\"".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::RightDoubleBrackets, token_value: "}}".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::TempalteLiteral, token_value: " ".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::LeftDoubleBrackets, token_value: "{{".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::If, token_value: "if".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::Identifier, token_value: "property".to_string()});
-    //     assert_eq!(tokener.get_token(), Token{token_type: TokenType::RightDoubleBrackets, token_value: "}}".to_string()});
-    // }
+    #[test]
+    fn it_works() {
+        let mut tokener = Tokenizer::new(
+            // r#"hello, {{ name }} yes man {{ "no man" }}{{ for item in items }}{{ if property"#
+            r#"hello, {{    person.name}} y {{yes}}{{for item in items}}  a {{ "yes" }} {{ if property}}"#.as_bytes()
+        );
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::TempalteLiteral, token_value: "hello, ".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::LeftDoubleBrackets, token_value: "{{".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::Identifier, token_value: "person".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::Dot, token_value: ".".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::Identifier, token_value: "name".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::RightDoubleBrackets, token_value: "}}".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::TempalteLiteral, token_value: " y ".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::LeftDoubleBrackets, token_value: "{{".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::Identifier, token_value: "yes".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::RightDoubleBrackets, token_value: "}}".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::LeftDoubleBrackets, token_value: "{{".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::For, token_value: "for".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::Identifier, token_value: "item".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::In, token_value: "in".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::Identifier, token_value: "items".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::RightDoubleBrackets, token_value: "}}".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::TempalteLiteral, token_value: "  a ".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::LeftDoubleBrackets, token_value: "{{".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::String, token_value: "\"yes\"".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::RightDoubleBrackets, token_value: "}}".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::TempalteLiteral, token_value: " ".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::LeftDoubleBrackets, token_value: "{{".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::If, token_value: "if".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::Identifier, token_value: "property".to_string()});
+        assert_eq!(tokener.next().unwrap(), Token{token_type: TokenType::RightDoubleBrackets, token_value: "}}".to_string()});
+        assert_eq!(tokener.next(), None);
+    }
 }
