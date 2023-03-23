@@ -1,3 +1,5 @@
+use crate::statement::Statement;
+
 pub trait Evaluatable {
     fn evaluate(&self) -> Expression;
 }
@@ -10,7 +12,7 @@ pub enum Expression {
 }
 #[derive(Debug)]
 pub struct CallExpression {
-    pub callee: Box<Expression>,
+    pub callee: Box<Statement>,
     pub name: String
 }
 #[derive(Debug)]

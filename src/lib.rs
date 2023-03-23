@@ -36,14 +36,12 @@ pub fn render(source: &str, context_json: &str) -> String {
     let mut parser = Parser::new();
     let statements = parser.parse(&mut tokenizer);
     let value: Value = serde_json::from_str(context_json).unwrap();
-    let mut interperter = Interperter {context: value, result: String::new()};
-    interperter.interpret(statements);
-    interperter.result
+    let mut interperter = Interperter::new(value);
+    interperter.interpret(&statements)
 }
 
 #[derive(PartialEq, Debug, Copy, Clone)]
 enum TokenType {
-    Begin,
     LeftDoubleBrackets,
     RightDoubleBrackets,
     For,

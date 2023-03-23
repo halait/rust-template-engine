@@ -136,48 +136,48 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
-    pub fn get_token(&mut self) -> Token {
-        loop {
-            self.token_start = self.i;
-            match self.get_current() {
-                Some(character) => {
-                    if !self.in_curly {
-                        if self.at_curly_start() {
-                            self.in_curly = true;
-                            // skip curly
-                            self.increment();
-                            self.increment();
-                            return self.tokenize(TokenType::LeftDoubleBrackets);
-                        } else {
-                            return self.tokenize_template_string();
-                        }
-                    } else {
-                        if character.is_ascii_alphabetic() {
-                            return self.tokenize_symbol();
-                        } else if character == b'.' {
-                            self.increment();
-                            return self.tokenize(TokenType::Dot);
-                        } else if character == b'}' && self.is_next(b'}') {
-                            self.in_curly = false;
-                            // skip curly
-                            self.increment();
-                            self.increment();
-                            return self.tokenize(TokenType::RightDoubleBrackets);
-                        } else if character == b'"' {
-                            return self.tokenize_string_literal();
-                        } else if character.is_ascii_whitespace() {
-                            self.increment();
-                        } else {
-                            panic!("{}", message_formatter::format(&self.source, self.i, "Invalid character"));
-                        }
-                    }
-                },
-                None => {
-                    return self.tokenize(TokenType::End);
-                }
-            }
-        }
-    }
+    // pub fn get_token(&mut self) -> Token {
+    //     loop {
+    //         self.token_start = self.i;
+    //         match self.get_current() {
+    //             Some(character) => {
+    //                 if !self.in_curly {
+    //                     if self.at_curly_start() {
+    //                         self.in_curly = true;
+    //                         // skip curly
+    //                         self.increment();
+    //                         self.increment();
+    //                         return self.tokenize(TokenType::LeftDoubleBrackets);
+    //                     } else {
+    //                         return self.tokenize_template_string();
+    //                     }
+    //                 } else {
+    //                     if character.is_ascii_alphabetic() {
+    //                         return self.tokenize_symbol();
+    //                     } else if character == b'.' {
+    //                         self.increment();
+    //                         return self.tokenize(TokenType::Dot);
+    //                     } else if character == b'}' && self.is_next(b'}') {
+    //                         self.in_curly = false;
+    //                         // skip curly
+    //                         self.increment();
+    //                         self.increment();
+    //                         return self.tokenize(TokenType::RightDoubleBrackets);
+    //                     } else if character == b'"' {
+    //                         return self.tokenize_string_literal();
+    //                     } else if character.is_ascii_whitespace() {
+    //                         self.increment();
+    //                     } else {
+    //                         panic!("{}", message_formatter::format(&self.source, self.i, "Invalid character"));
+    //                     }
+    //                 }
+    //             },
+    //             None => {
+    //                 return self.tokenize(TokenType::End);
+    //             }
+    //         }
+    //     }
+    // }
 }
 
 impl Iterator for Tokenizer<'_> {

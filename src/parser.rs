@@ -1,4 +1,4 @@
-use crate::{Token, TokenType, tokenizer::{Tokenizer, self}, statement::{Statement, self}, expression::{Expression, self}};
+use crate::{Token, TokenType, tokenizer::{Tokenizer}, statement::{Statement, self}, expression::{Expression, self}};
 
 pub struct Parser {
     current_token: Option<Token>
@@ -6,6 +6,10 @@ pub struct Parser {
 impl Parser {
     pub fn new() -> Self {
         Parser { current_token: None }
+    }
+    
+    pub fn init(&mut self, tokenizer: &mut Tokenizer) {
+        self.next_token(tokenizer);
     }
 
     fn next_token(&mut self, tokenizer: &mut Tokenizer) -> &Option<Token> {
@@ -30,9 +34,8 @@ impl Parser {
 
     pub fn parse(&mut self, tokenizer: &mut Tokenizer) -> Vec::<Statement> {
         let mut statements: Vec::<Statement> = Vec::new();
-        self.next_token(tokenizer);
         loop {
-            if self.current_token == None || self.current_token.as_ref().unwrap().token_type == TokenType::End {
+            if self.current_token == None {
                 return statements;
             }
             match self.parse_statement(tokenizer) {
@@ -56,10 +59,8 @@ impl Parser {
                     TokenType::For => {
                         Some(self.parse_for(tokenizer))
                     }
-                    TokenType::Begin => todo!(),
                     TokenType::LeftDoubleBrackets => todo!(),
                     TokenType::RightDoubleBrackets => todo!(),
-                    TokenType::For => todo!(),
                     TokenType::If => todo!(),
                     TokenType::In => todo!(),
                     TokenType::When => todo!(),
@@ -79,7 +80,7 @@ impl Parser {
                 Some(Statement::Expression(expression))
             }
             _ => {
-                todo!()
+                todo!("{:?}", self.current_token);
             }
         }
     }
@@ -95,12 +96,12 @@ impl Parser {
             self.next_token(tokenizer);
             self.on(TokenType::Identifier);
             expression = Expression::Call(expression::CallExpression {
-                callee: Box::new(expression),
+                callee: Box::new(Statement::Expression(expression)),
                 name: self.current_token.as_ref().unwrap().token_value.clone()
             });
             self.next_token(tokenizer);
         }
-
+        self.expect(TokenType::RightDoubleBrackets, tokenizer);
         expression
     }
 
@@ -115,16 +116,18 @@ impl Parser {
     fn parse_for(&mut self, tokenizer: &mut Tokenizer) -> Statement {
         self.expect(TokenType::For, tokenizer);
         self.on(TokenType::Identifier);
-        let instance_identifier = self.parse_identifier(tokenizer);
+        let instance_identifier = self.current_token.as_ref().unwrap().token_value.clone();
+        self.next_token(tokenizer);
         self.expect(TokenType::In, tokenizer);
         self.on(TokenType::Identifier);
         let array_variable = self.parse_call(tokenizer);
-        self.on(TokenType::RightDoubleBrackets);
         let statements = self.parse(tokenizer);
+        self.expect(TokenType::End, tokenizer);
+        self.expect(TokenType::RightDoubleBrackets, tokenizer);
         Statement::For(statement::ForStatement{
             instance_identifier: instance_identifier,
-            array_variable: array_variable,
-            statements: statements
+            array_variable: Box::new(Statement::Expression(array_variable)),
+            statements
         })
     }
 }
@@ -132,9 +135,9 @@ impl Parser {
 
 #[cfg(test)]
 mod tests {
-    use crate::expression::VariableExpression;
+    // use crate::expression::VariableExpression;
 
-    use super::*;
+    // use super::*;
 
     // #[test]
     // fn it_works() {

@@ -1,5 +1,4 @@
-use crate::expression::{self, VariableExpression, CallExpression, Expression};
-
+use crate::expression::{self};
 
 #[derive(Debug)]
 pub enum Statement {
@@ -9,7 +8,7 @@ pub enum Statement {
 
 #[derive(Debug)]
 pub struct ForStatement {
-    pub instance_identifier: Expression,
-    pub array_variable: Expression,
+    pub instance_identifier: String,
+    pub array_variable: Box<Statement>,
     pub statements: Vec<Statement>
 }
