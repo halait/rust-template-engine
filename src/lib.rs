@@ -34,6 +34,7 @@ compound_expression = '{{' 'for' identifier 'in' identifier '}}' statement '{{' 
 pub fn render(source: &str, context_json: &str) -> String {
     let mut tokenizer = Tokenizer::new(source.as_bytes());
     let mut parser = Parser::new();
+    parser.init(&mut tokenizer);
     let statements = parser.parse(&mut tokenizer);
     let value: Value = serde_json::from_str(context_json).unwrap();
     let mut interperter = Interperter::new(value);
