@@ -15,19 +15,14 @@ pub mod interperter;
 /*
 Grammer rules in Extended Backus–Naur Form (EBNF)
 program = { statement } 'End'
-statement = expression
+statement = template_literal
+            | '{{' expression '}}'
             | for
-expression = '{{' call '}}' | template_literal
+            | if
+expression = call
 for = '{{' 'for' identifier 'in' call '}}' statement '{{' 'end' '}}'
+if = '{{' if expression '}}' { statement } [ '{{' else '}}'  { statement }] '{{' end '}}'
 call = identifier { "." identifier }
-
-
-
-
-expression = '{{' identifier '}}'
-compound_expression = '{{' 'for' identifier 'in' identifier '}}' statement '{{' 'end' '}}'
-                    | '{{' 'if' identifier '}}' statement [ '{{' 'else' '}}' ] '{{' 'end' '}}'
-                    | '{{' 
 */
 
 #[wasm_bindgen]

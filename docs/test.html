@@ -32,4 +32,13 @@
         <li>{{ what.this.is }}</li>
         {{ end }}
     </ul>
+    Nested for loop:
+    <ul>
+        {{ for language in languages }}
+            {{ for king in kings }}
+                <li>Majesty: {{ king }}</li>
+                <li>Outer scope: {{ language.name }} </li>
+            {{ end }}
+        {{ end }}
+    </ul>
 </p>
