@@ -1,0 +1,20 @@
+{
+    "guest": "Traveler",
+    "name": {
+        "first": "Punit",
+        "last": "Halait"
+    },
+    "kings": [
+        "John",
+        "Don",
+        "Paisely"
+    ],
+    "languages": [
+        {"name": "Rust"},
+        {"name": "TypeScript"},
+        {"name": "CSS"}
+    ],
+    "what": {
+        "this": {"is": "document"}
+    }
+}

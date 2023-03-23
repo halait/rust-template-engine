@@ -1,0 +1,35 @@
+<style>
+    body {
+        max-width: 80rem;
+        padding: 0 1rem;
+        margin: 1rem auto 0;
+        background-color: #000;
+        color: #fff;
+        font-family: sans-serif;
+    }
+</style>
+<h1>Hello, {{ guest }}</h1>
+<p>My name: {{ name.first }} {{ name.last }}</p>
+<p>This is a test {{ what.this.is }}</p>
+<p>
+    The kings:
+    <ul>
+        {{ for king in kings }}
+        <li>Majesty: {{ king }}</li>
+        {{ end }}
+    </ul>
+</p>
+<p>
+    The languages:
+    <ul>
+        {{ for language in languages }}
+        <li>{{ language.name }}</li>
+        {{ end }}
+    </ul>
+    Outer scope variable from inner scope:
+    <ul>
+        {{ for language in languages }}
+        <li>{{ what.this.is }}</li>
+        {{ end }}
+    </ul>
+</p>

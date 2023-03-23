@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en-US">
+
+<head>
+  <meta charset="utf-8" />
+  <meta name=viewport content="width=device-width,initial-scale=1">
+  <title>YARTL </title>
+</head>
+<style>
+  body {
+    margin: 0;
+    background-color: #000;
+    height: 100vh;
+    overflow: hidden;
+  }
+  #preview {
+    height: 100%;
+    width: 100%;
+    border: none;
+  }
+</style>
+<body>
+  <iframe id="preview"></iframe>
+  <script type="module">
+    import init, { render } from "./rust_template_engine.js";
+    const thens = await Promise.all([
+      init(),
+      fetch("./test.html"),
+      fetch("./test.json")
+    ]);
+
+    document.getElementById("preview").contentWindow.document.write(
+      render(await thens[1].text(), await thens[2].text())
+    );
+  </script>
+</body>
+</html>
