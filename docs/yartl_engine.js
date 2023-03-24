@@ -170,7 +170,7 @@ function initSync(module) {
 
 async function init(input) {
     if (typeof input === 'undefined') {
-        input = new URL('rust_template_engine_bg.wasm', import.meta.url);
+        input = new URL('yartl_engine_bg.wasm', import.meta.url);
     }
     const imports = getImports();
 

@@ -22,7 +22,7 @@
 <body>
   <iframe id="preview"></iframe>
   <script type="module">
-    import init, { render } from "./rust_template_engine.js";
+    import init, { render } from "./yartl_engine.js";
     const thens = await Promise.all([
       init(),
       fetch("./test.html"),
