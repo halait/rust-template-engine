@@ -200,7 +200,7 @@ mod tests {
 
     #[test]
     fn it_works() {
-        let mut tokener = Tokenizer::new(
+        let tokener = Tokenizer::new(
             // r#"hello, {{ name }} yes man {{ "no man" }}{{ for item in items }}{{ if property"#
             r#"hello, {{    person.name}} y {{yes}}{{for item in items}}  a {{ "yes" }} {{ if property}}"#.as_bytes()
         );
