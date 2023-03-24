@@ -5,21 +5,21 @@ pub trait Evaluatable {
 }
 
 #[derive(Debug)]
-pub enum Expression {
-    Call(CallExpression),
-    TemplateLiteral(TemplateLiteralExpression),
-    Variable(VariableExpression)
+pub enum Expression<'a> {
+    Call(CallExpression<'a>),
+    TemplateLiteral(TemplateLiteralExpression<'a>),
+    Variable(VariableExpression<'a>)
 }
 #[derive(Debug)]
-pub struct CallExpression {
-    pub callee: Box<Statement>,
-    pub name: String
+pub struct CallExpression<'a> {
+    pub callee: Box<Statement<'a>>,
+    pub name: &'a [u8]
 }
 #[derive(Debug)]
-pub struct TemplateLiteralExpression {
-    pub value: String
+pub struct TemplateLiteralExpression<'a> {
+    pub value: &'a [u8]
 }
 #[derive(Debug)]
-pub struct VariableExpression {
-    pub name: String
+pub struct VariableExpression<'a> {
+    pub name: &'a [u8]
 }

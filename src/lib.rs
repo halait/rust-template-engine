@@ -27,10 +27,10 @@ call = identifier { "." identifier }
 
 #[wasm_bindgen]
 pub fn render(source: &str, context_json: &str) -> String {
-    let mut tokenizer = Tokenizer::new(source.as_bytes());
-    let mut parser = Parser::new();
-    parser.init(&mut tokenizer);
-    let statements = parser.parse(&mut tokenizer);
+    let binding = Tokenizer::new(source.as_bytes());
+    let tokens = binding.tokenize();
+    let binding = Parser::new(&tokens);
+    let statements = binding.parse();
     let value: Value = serde_json::from_str(context_json).unwrap();
     let mut interperter = Interperter::new(value);
     interperter.interpret(&statements)
@@ -51,10 +51,10 @@ enum TokenType {
     End
 }
 
-#[derive(PartialEq, Debug)]
-pub struct Token {
+#[derive(PartialEq, Debug, Copy, Clone)]
+pub struct Token<'a> {
     token_type: TokenType,
-    token_value: String
+    token_value: &'a [u8]
 }
 
 #[cfg(test)]

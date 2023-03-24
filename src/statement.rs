@@ -1,14 +1,14 @@
 use crate::expression::{self};
 
 #[derive(Debug)]
-pub enum Statement {
-    Expression(expression::Expression),
-    For(ForStatement),
+pub enum Statement<'a> {
+    Expression(expression::Expression<'a>),
+    For(ForStatement<'a>),
 }
 
 #[derive(Debug)]
-pub struct ForStatement {
-    pub instance_identifier: String,
-    pub array_variable: Box<Statement>,
-    pub statements: Vec<Statement>
+pub struct ForStatement<'a> {
+    pub instance_identifier: &'a [u8],
+    pub array_variable: Box<Statement<'a>>,
+    pub statements: Vec<Statement<'a>>
 }

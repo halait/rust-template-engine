@@ -1,44 +1,52 @@
-use crate::{Token, TokenType, tokenizer::{Tokenizer}, statement::{Statement, self}, expression::{Expression, self}};
+use std::{cell::RefCell, ops::Deref};
 
-pub struct Parser {
-    current_token: Option<Token>
+use crate::{Token, TokenType, statement::{Statement, self}, expression::{Expression, self}};
+
+pub struct Parser<'a> {
+    tokens: &'a Vec<Token<'a>>,
+    i: RefCell<usize>
 }
-impl Parser {
-    pub fn new() -> Self {
-        Parser { current_token: None }
+
+impl<'a, 'b> Parser<'a> {
+    pub fn new(tokens: &'a Vec<Token>) -> Self {
+        Parser { tokens, i: RefCell::new(0) }
     }
     
-    pub fn init(&mut self, tokenizer: &mut Tokenizer) {
-        self.next_token(tokenizer);
+    // pub fn init(&mut self) {
+    //     self.next_token();
+    // }
+
+    fn next_token(&self) -> Option<&Token> {
+        let old = *self.i.borrow();
+        self.i.replace(old + 1);
+        // self.i += 1;
+        self.current_token()
     }
 
-    fn next_token(&mut self, tokenizer: &mut Tokenizer) -> &Option<Token> {
-        self.current_token = tokenizer.next();
-        println!("Next token: {:?}", self.current_token);
-        &self.current_token
+    fn current_token(&self) -> Option<&Token> {
+        let i = self.i.borrow();
+        if self.tokens.len() <= *i { None } else { Some(&self.tokens[*i]) }
     }
 
-    fn expect(&mut self, token_type: TokenType, tokenizer: &mut Tokenizer) {
+    fn expect(&self, token_type: TokenType) {
         self.on(token_type);
-        self.next_token(tokenizer);
+        self.next_token();
     }
 
-    fn on(&mut self, token_type: TokenType) {
-        if self.current_token == None {
-            panic!("Unexpected end of input, expected token: {:?}, ", token_type);
-        }
-        if self.current_token.as_ref().unwrap().token_type != token_type {
-            panic!("Unexpected token: {:?}, expected: {:?}", self.current_token.as_ref().unwrap().token_type, token_type);
+    fn on(&self, token_type: TokenType) {
+        let token = self.current_token().expect(&format!("Unexpected end of input, expected token: {:?}", token_type));
+        if token.token_type != token_type {
+            panic!("Unexpected token: {:?}, expected: {:?}", token.token_type, token_type);
         }
     }
 
-    pub fn parse(&mut self, tokenizer: &mut Tokenizer) -> Vec::<Statement> {
+    pub fn parse(&self) -> Vec::<Statement> {
         let mut statements: Vec::<Statement> = Vec::new();
         loop {
-            if self.current_token == None {
+            if self.current_token() == None {
                 return statements;
             }
-            match self.parse_statement(tokenizer) {
+            match self.parse_statement() {
                 Some(statement) => {
                     statements.push(statement);
                 }
@@ -49,15 +57,15 @@ impl Parser {
         }
     }
 
-    fn parse_statement(&mut self, tokenizer: &mut Tokenizer) -> Option<Statement> {
-        match self.current_token.as_ref()?.token_type {
+    fn parse_statement(&self) -> Option<Statement> {
+        match self.current_token()?.token_type {
             TokenType::LeftDoubleBrackets => {
-                match self.next_token(tokenizer).as_ref().expect("Unexpected end of input").token_type {
+                match self.next_token()?.token_type {
                     TokenType::Identifier => {
-                        Some(Statement::Expression(self.parse_expression(tokenizer)))
+                        Some(Statement::Expression(self.parse_expression()))
                     }
                     TokenType::For => {
-                        Some(self.parse_for(tokenizer))
+                        Some(self.parse_for())
                     }
                     TokenType::LeftDoubleBrackets => todo!(),
                     TokenType::RightDoubleBrackets => todo!(),
@@ -74,56 +82,56 @@ impl Parser {
             }
             TokenType::TempalteLiteral => {
                 let expression = Expression::TemplateLiteral(expression::TemplateLiteralExpression {
-                    value: self.current_token.as_ref().expect("Unexpected end of input").token_value.clone()
+                    value: self.current_token()?.token_value
                 });
-                self.next_token(tokenizer);
+                self.next_token();
                 Some(Statement::Expression(expression))
             }
             _ => {
-                todo!("{:?}", self.current_token);
+                todo!("{:?}", self.current_token()?);
             }
         }
     }
 
-    fn parse_expression(&mut self, tokenizer: &mut Tokenizer) -> Expression {
-        self.parse_call(tokenizer)
+    fn parse_expression(&self) -> Expression {
+        self.parse_call()
     }
 
-    fn parse_call(&mut self, tokenizer: &mut Tokenizer) -> Expression {
-        let mut expression = self.parse_identifier(tokenizer);
+    fn parse_call(&self) -> Expression {
+        let mut expression = self.parse_identifier();
         
-        while self.current_token.as_ref().expect("Unexpected end of input").token_type == TokenType::Dot {
-            self.next_token(tokenizer);
+        while self.current_token().expect("Unexpected end of input").token_type == TokenType::Dot {
+            self.next_token();
             self.on(TokenType::Identifier);
             expression = Expression::Call(expression::CallExpression {
                 callee: Box::new(Statement::Expression(expression)),
-                name: self.current_token.as_ref().unwrap().token_value.clone()
+                name: self.current_token().unwrap().token_value
             });
-            self.next_token(tokenizer);
+            self.next_token();
         }
-        self.expect(TokenType::RightDoubleBrackets, tokenizer);
+        self.expect(TokenType::RightDoubleBrackets);
         expression
     }
 
-    fn parse_identifier(&mut self, tokenizer: &mut Tokenizer) -> Expression {
+    fn parse_identifier(&self) -> Expression {
         let expression = Expression::Variable(expression::VariableExpression {
-            name: self.current_token.as_ref().unwrap().token_value.clone()
+            name: self.current_token().unwrap().token_value
         });
-        self.next_token(tokenizer);
+        self.next_token();
         expression
     }
 
-    fn parse_for(&mut self, tokenizer: &mut Tokenizer) -> Statement {
-        self.expect(TokenType::For, tokenizer);
+    fn parse_for(&self) -> Statement {
+        self.expect(TokenType::For);
         self.on(TokenType::Identifier);
-        let instance_identifier = self.current_token.as_ref().unwrap().token_value.clone();
-        self.next_token(tokenizer);
-        self.expect(TokenType::In, tokenizer);
+        let instance_identifier = self.current_token().unwrap().token_value;
+        self.next_token();
+        self.expect(TokenType::In);
         self.on(TokenType::Identifier);
-        let array_variable = self.parse_call(tokenizer);
-        let statements = self.parse(tokenizer);
-        self.expect(TokenType::End, tokenizer);
-        self.expect(TokenType::RightDoubleBrackets, tokenizer);
+        let array_variable = self.parse_call();
+        let statements = self.parse();
+        self.expect(TokenType::End);
+        self.expect(TokenType::RightDoubleBrackets);
         Statement::For(statement::ForStatement{
             instance_identifier: instance_identifier,
             array_variable: Box::new(Statement::Expression(array_variable)),
