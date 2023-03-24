@@ -27,6 +27,7 @@ impl<'a> Tokenizer<'a> {
                 ("in".as_bytes(), TokenType::In),
                 ("when".as_bytes(), TokenType::When),
                 ("if".as_bytes(), TokenType::If),
+                ("else".as_bytes(), TokenType::Else),
                 ("end".as_bytes(), TokenType::End),
             ]),
             in_curly: RefCell::new(false)
@@ -123,7 +124,7 @@ impl<'a> Tokenizer<'a> {
                     return self.tokenize_last(self.get_symbol_token_type(self.get_last_token()));
                 },
                 Some(character) => {
-                    if !character.is_ascii_alphanumeric() {
+                    if character != b'_' && !character.is_ascii_alphanumeric() {
                         return self.tokenize_last(self.get_symbol_token_type(self.get_last_token()));
                     }
                 }

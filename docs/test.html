@@ -11,34 +11,40 @@
 <h1>Hello, {{ guest }}</h1>
 <p>My name: {{ name.first }} {{ name.last }}</p>
 <p>This is a test {{ what.this.is }}</p>
-<p>
-    The kings:
+{{ if name }}<p>Name exists!</p>{{ end }}
+{{ if does_not_exist }}<p>Should not appear</p>{{ else }}<p>Else works as expected</p>{{ end }}
+<div>
+    Countries:
     <ul>
-        {{ for king in kings }}
-        <li>Majesty: {{ king }}</li>
+        {{ for country in countries }}
+        <li>{{ country }}</li>
         {{ end }}
     </ul>
-</p>
-<p>
+</div>
+<div>
     The languages:
     <ul>
         {{ for language in languages }}
         <li>{{ language.name }}</li>
         {{ end }}
     </ul>
-    Outer scope variable from inner scope:
-    <ul>
-        {{ for language in languages }}
-        <li>{{ what.this.is }}</li>
-        {{ end }}
-    </ul>
+</div>
+<div>
     Nested for loop:
     <ul>
         {{ for language in languages }}
-            {{ for king in kings }}
-                <li>Majesty: {{ king }}</li>
-                <li>Outer scope: {{ language.name }} </li>
+            {{ for country in countries }}
+                <li>Outer: {{ language.name }} </li>
+                <li>Inner: {{ country }}</li>
             {{ end }}
         {{ end }}
     </ul>
-</p>
+</div>
+<div>
+    If in for:
+    <ul>
+        {{ for language in languages }}
+            <li>{{ if language }}If inside for loop{{ end }}</li>
+        {{ end }}
+    </ul>
+</div>

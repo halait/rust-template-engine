@@ -40,6 +40,14 @@ impl<'a, 'b> Parser<'a> {
         }
     }
 
+    fn is_on(&self, token_type: TokenType) -> bool {
+        let token = self.current_token().expect(&format!("Unexpected end of input, expected token"));
+        if token.token_type != token_type {
+            return false;
+        }
+        true
+    }
+
     pub fn parse(&self) -> Vec::<Statement> {
         let mut statements: Vec::<Statement> = Vec::new();
         loop {
@@ -62,14 +70,16 @@ impl<'a, 'b> Parser<'a> {
             TokenType::LeftDoubleBrackets => {
                 match self.next_token()?.token_type {
                     TokenType::Identifier => {
-                        Some(Statement::Expression(self.parse_expression()))
+                        let statement = Some(Statement::Expression(self.parse_expression()));
+                        self.expect(TokenType::RightDoubleBrackets);
+                        statement                        
                     }
-                    TokenType::For => {
-                        Some(self.parse_for())
-                    }
+                    TokenType::For => Some(self.parse_for()),
+                    TokenType::If => Some(self.parse_if()),
+                    // end at else, can this be more elegant?
+                    TokenType::Else => None,
                     TokenType::LeftDoubleBrackets => todo!(),
                     TokenType::RightDoubleBrackets => todo!(),
-                    TokenType::If => todo!(),
                     TokenType::In => todo!(),
                     TokenType::When => todo!(),
                     TokenType::String => todo!(),
@@ -109,7 +119,6 @@ impl<'a, 'b> Parser<'a> {
             });
             self.next_token();
         }
-        self.expect(TokenType::RightDoubleBrackets);
         expression
     }
 
@@ -129,6 +138,7 @@ impl<'a, 'b> Parser<'a> {
         self.expect(TokenType::In);
         self.on(TokenType::Identifier);
         let array_variable = self.parse_call();
+        self.expect(TokenType::RightDoubleBrackets);
         let statements = self.parse();
         self.expect(TokenType::End);
         self.expect(TokenType::RightDoubleBrackets);
@@ -136,6 +146,26 @@ impl<'a, 'b> Parser<'a> {
             instance_identifier: instance_identifier,
             array_variable: Box::new(Statement::Expression(array_variable)),
             statements
+        })
+    }
+
+    fn parse_if(&self) -> Statement {
+        self.expect(TokenType::If);
+        let condition = Box::new(Statement::Expression(self.parse_expression()));
+        self.expect(TokenType::RightDoubleBrackets);
+        let if_statements = self.parse();
+        let mut else_statements: Vec<Statement> = Vec::new();
+        if self.is_on(TokenType::Else) {
+            self.next_token();
+            self.expect(TokenType::RightDoubleBrackets);
+            else_statements = self.parse();
+        }
+        self.expect(TokenType::End);
+        self.expect(TokenType::RightDoubleBrackets);
+        Statement::If(statement::IfStatement {
+            condition,
+            if_statements,
+            else_statements
         })
     }
 }

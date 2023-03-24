@@ -28,10 +28,8 @@
       fetch("./test.html"),
       fetch("./test.json")
     ]);
-
-    document.getElementById("preview").contentWindow.document.write(
-      render(await thens[1].text(), await thens[2].text())
-    );
+    const html = render(await thens[1].text(), await thens[2].text());
+    document.getElementById("preview").contentWindow.document.write(html);
   </script>
 </body>
 </html>

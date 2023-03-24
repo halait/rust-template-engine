@@ -4,10 +4,10 @@
         "first": "Punit",
         "last": "Halait"
     },
-    "kings": [
-        "John",
-        "Don",
-        "Paisely"
+    "countries": [
+        "Canada",
+        "United States of America",
+        "United Kingdom"
     ],
     "languages": [
         {"name": "Rust"},
