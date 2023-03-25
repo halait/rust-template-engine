@@ -11,11 +11,17 @@
 <h1>Hello, {{ guest }}</h1>
 <p>My name: {{ name.first }} {{ name.last }}</p>
 <p>This is a test {{ what.this.is }}</p>
-<p>Out: {{ if name }}Should appear{{ end }}</p>
-<p>Out: {{ if !name }}Should not appear{{ else }}Should appear{{ end }}</p>
-<p>Out: {{ if does_not_exist }}Should not appear{{ else }}Should appear{{ end }}</p>
-<p>Out: {{ if name.first == "Punit" }}Should appear{{ else }}Should not appear{{ end }}</p>
-<p>Out: {{ if name.last != "Halait" }}Should not appear{{ else }}Should appear{{ end }}</p>
+<h2>If Tests</h2>
+<ul>
+    <li>{{ if name }}Pass{{ end }} - simple</li>
+    <li>{{ if !name }}Fail{{ else }}Pass{{ end }} - negated</li>
+    <li>{{ if does_not_exist }}Fail{{ else }}Pass{{ end }} - null is falsy</li>
+    <li>{{ if name.first == "Punit" }}Pass{{ else }}Fail{{ end }}  - comparison</li>
+    <li>{{ if name.last == "Haaalait" }}Fail{{ else }}Pass{{ end }} - comparison false</li>
+    <li>{{ if name.last != "Halait" }}Fail{{ else }}Pass{{ end }} - comparison not equals</li>
+    <li>{{ if name.last != "Halait" }}Fail{{ else }}{{ if name.first }}Pass{{ else }}Fail{{ end }}{{ end }} - nested if</li>
+</ul>
+<h2>For Tests</h2>
 <div>
     Countries:
     <ul>
