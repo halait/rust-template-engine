@@ -29,7 +29,11 @@
       fetch("./test.json")
     ]);
     const html = render(await thens[1].text(), await thens[2].text());
-    document.getElementById("preview").contentWindow.document.write(html);
+    // document.getElementById("preview").contentWindow.document.write(html);
+    const bytes = new TextEncoder().encode(html).buffer;
+    document.getElementById("preview").src = URL.createObjectURL(
+      new Blob([bytes], { type: "text/html" })
+    );
   </script>
 </body>
 </html>
