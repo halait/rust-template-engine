@@ -53,8 +53,8 @@ impl<'a> Tokenizer<'a> {
     }
 
     fn increment(&self) -> Option<u8> {
-        let old = *self.i.borrow() + 1;
-        self.i.replace(old);
+        let new = *self.i.borrow() + 1;
+        self.i.replace(new);
         self.get_current()
     }
 
@@ -71,6 +71,18 @@ impl<'a> Tokenizer<'a> {
             Some(next_character) => if character == next_character {true} else {false}
         }
     }
+
+    fn is_previous(&self, character: u8) -> bool {
+        let current = *self.i.borrow();
+        if current == 0 {
+            false
+        } else if self.source[current - 1] == character {
+            true
+        } else {
+            false
+        }
+    }
+
 
     fn get_last_token(&self) -> &[u8] {
         &self.source[*self.token_start.borrow() .. *self.i.borrow()]
@@ -137,10 +149,10 @@ impl<'a> Tokenizer<'a> {
         loop {
             match self.increment() {
                 None => {
-                    return self.tokenize_last(TokenType::String);
+                    panic!("Unexpected end of input");
                 }
                 Some(character) => {
-                    if character != b'\\' && self.is_next(b'"') {
+                    if !self.is_previous(b'\\') && character == b'"' {
                         // eat quotes
                         self.increment();
                         self.increment();

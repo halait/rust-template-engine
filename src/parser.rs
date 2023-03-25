@@ -11,15 +11,11 @@ impl<'a, 'b> Parser<'a> {
     pub fn new(tokens: &'a Vec<Token>) -> Self {
         Parser { tokens, i: RefCell::new(0) }
     }
-    
-    // pub fn init(&mut self) {
-    //     self.next_token();
-    // }
 
     fn next_token(&self) -> Option<&Token> {
         let old = *self.i.borrow();
         self.i.replace(old + 1);
-        // self.i += 1;
+        println!("Next token: {:?}", self.current_token());
         self.current_token()
     }
 
