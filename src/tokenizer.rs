@@ -29,6 +29,7 @@ impl<'a> Tokenizer<'a> {
                 ("if".as_bytes(), TokenType::If),
                 ("else".as_bytes(), TokenType::Else),
                 ("end".as_bytes(), TokenType::End),
+                ("==".as_bytes(), TokenType::End),
             ]),
             in_curly: RefCell::new(false)
         }
@@ -171,12 +172,23 @@ impl<'a> Tokenizer<'a> {
                         } else if character == b'.' {
                             self.increment();
                             return Some(self.tokenize_last(TokenType::Dot));
+                        } else if character == b'=' && self.is_next(b'=') {
+                            self.increment();
+                            self.increment();
+                            return Some(self.tokenize_last(TokenType::DoubleEquals));
+                        } else if character == b'!' && self.is_next(b'=') {
+                            self.increment();
+                            self.increment();
+                            return Some(self.tokenize_last(TokenType::ExclaimationEqual));
                         } else if character == b'}' && self.is_next(b'}') {
                             self.in_curly.replace(false);
                             // skip curly
                             self.increment();
                             self.increment();
                             return Some(self.tokenize_last(TokenType::RightDoubleBrackets));
+                        } else if character == b'!' {
+                            self.increment();
+                            return Some(self.tokenize_last(TokenType::Exclaimation));
                         } else if character == b'"' {
                             return Some(self.tokenize_string_literal());
                         } else if character.is_ascii_whitespace() {

@@ -14,15 +14,18 @@ pub mod interperter;
 
 /*
 Grammer rules in Extended Backus–Naur Form (EBNF)
-program = { statement } 'End'
+program = { statement }
 statement = template_literal
             | '{{' expression '}}'
             | for
             | if
-expression = call
+expression = equality
+eqaulity = unary {( ('!=' | '==' ) unary )}
+unary = ['!'] call 
 for = '{{' 'for' identifier 'in' call '}}' statement '{{' 'end' '}}'
 if = '{{' if expression '}}' { statement } [ '{{' else '}}'  { statement }] '{{' end '}}'
-call = identifier { "." identifier }
+call = ( identifier { '.' identifier } ) | literal
+literal = string
 */
 
 #[wasm_bindgen]
@@ -32,7 +35,7 @@ pub fn render(source: &str, context_json: &str) -> String {
     let binding = Parser::new(&tokens);
     let statements = binding.parse();
     let value: Value = serde_json::from_str(context_json).unwrap();
-    let mut interperter = Interperter::new(value);
+    let interperter = Interperter::new(value);
     interperter.interpret(&statements)
 }
 
@@ -49,7 +52,10 @@ enum TokenType {
     String,
     TempalteLiteral,
     Dot,
-    End
+    End,
+    DoubleEquals,
+    ExclaimationEqual,
+    Exclaimation
 }
 
 #[derive(PartialEq, Debug, Copy, Clone)]

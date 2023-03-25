@@ -1,6 +1,6 @@
 use std::{cell::RefCell};
 
-use crate::{Token, TokenType, statement::{Statement, self}, expression::{Expression, self}};
+use crate::{Token, TokenType, statement::{Statement, self}, expression::{Expression, self, UnaryExpression, BinaryExpression}};
 
 pub struct Parser<'a> {
     tokens: &'a Vec<Token<'a>>,
@@ -41,7 +41,7 @@ impl<'a, 'b> Parser<'a> {
     }
 
     fn is_on(&self, token_type: TokenType) -> bool {
-        let token = self.current_token().expect(&format!("Unexpected end of input, expected token"));
+        let token = self.current_token().expect(&format!("Unexpected end of input, expected more tokens"));
         if token.token_type != token_type {
             return false;
         }
@@ -69,24 +69,15 @@ impl<'a, 'b> Parser<'a> {
         match self.current_token()?.token_type {
             TokenType::LeftDoubleBrackets => {
                 match self.next_token()?.token_type {
-                    TokenType::Identifier => {
-                        let statement = Some(Statement::Expression(self.parse_expression()));
-                        self.expect(TokenType::RightDoubleBrackets);
-                        statement                        
-                    }
                     TokenType::For => Some(self.parse_for()),
                     TokenType::If => Some(self.parse_if()),
-                    // end at else, can this be more elegant?
+                    // can this be more elegant? does not fit in grammar rules
+                    TokenType::End => None,
                     TokenType::Else => None,
-                    TokenType::LeftDoubleBrackets => todo!(),
-                    TokenType::RightDoubleBrackets => todo!(),
-                    TokenType::In => todo!(),
-                    TokenType::When => todo!(),
-                    TokenType::String => todo!(),
-                    TokenType::TempalteLiteral => todo!(),
-                    TokenType::Dot => todo!(),
-                    TokenType::End => {
-                        None
+                    _ => {
+                        let statement = Some(Statement::Expression(self.parse_expression()));
+                        self.expect(TokenType::RightDoubleBrackets);
+                        statement
                     }
                 }
             }
@@ -104,30 +95,68 @@ impl<'a, 'b> Parser<'a> {
     }
 
     fn parse_expression(&self) -> Expression {
+        self.parse_equality()
+    }
+
+    fn parse_equality(&self) -> Expression {
+        let mut left = self.parse_unary();
+        while self.is_on(TokenType::DoubleEquals) || self.is_on(TokenType::ExclaimationEqual) {
+            let operator = self.current_token().unwrap();
+            self.next_token();
+            let right = Box::new(Statement::Expression(self.parse_unary()));
+            left = Expression::Binary(BinaryExpression {
+                left: Box::new(Statement::Expression(left)),
+                operator,
+                right
+            });
+        }
+        left
+    }
+
+    fn parse_unary(&self) -> Expression {
+        if self.is_on(TokenType::Exclaimation) {
+            let operator = self.current_token().unwrap().clone();
+            self.next_token();
+            return Expression::Unary(UnaryExpression {
+                operator,
+                right: Box::new(Statement::Expression(self.parse_call()))
+            });
+        }
         self.parse_call()
     }
 
     fn parse_call(&self) -> Expression {
-        let mut expression = self.parse_identifier();
-        
-        while self.current_token().expect("Unexpected end of input").token_type == TokenType::Dot {
-            self.next_token();
-            self.on(TokenType::Identifier);
-            expression = Expression::Call(expression::CallExpression {
-                callee: Box::new(Statement::Expression(expression)),
-                name: self.current_token().unwrap().token_value
-            });
-            self.next_token();
+        if self.is_on(TokenType::Identifier) {
+            let mut expression = self.parse_identifier();
+            
+            while self.current_token().expect("Unexpected end of input").token_type == TokenType::Dot {
+                self.next_token();
+                self.on(TokenType::Identifier);
+                expression = Expression::Call(expression::CallExpression {
+                    callee: Box::new(Statement::Expression(expression)),
+                    name: self.current_token().unwrap().token_value
+                });
+                self.next_token();
+            }
+            return expression;
         }
-        expression
+        self.parse_literal()
     }
 
     fn parse_identifier(&self) -> Expression {
+        self.on(TokenType::Identifier);
         let expression = Expression::Variable(expression::VariableExpression {
             name: self.current_token().unwrap().token_value
         });
         self.next_token();
         expression
+    }
+
+    fn parse_literal(&self) -> Expression {
+        self.on(TokenType::String);
+        let token = self.current_token().unwrap().clone();
+        self.next_token();
+        Expression::Literal(expression::LiteralExpression { token })
     }
 
     fn parse_for(&self) -> Statement {

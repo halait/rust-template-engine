@@ -11,8 +11,11 @@
 <h1>Hello, {{ guest }}</h1>
 <p>My name: {{ name.first }} {{ name.last }}</p>
 <p>This is a test {{ what.this.is }}</p>
-{{ if name }}<p>Name exists!</p>{{ end }}
-{{ if does_not_exist }}<p>Should not appear</p>{{ else }}<p>Else works as expected</p>{{ end }}
+<p>Out: {{ if name }}Should appear{{ end }}</p>
+<p>Out: {{ if !name }}Should not appear{{ else }}Should appear{{ end }}</p>
+<p>Out: {{ if does_not_exist }}Should not appear{{ else }}Should appear{{ end }}</p>
+<p>Out: {{ if name.first == "Punit" }}Should appear{{ else }}Should not appear{{ end }}</p>
+<p>Out: {{ if name.last != "Halait" }}Should not appear{{ else }}Should appear{{ end }}</p>
 <div>
     Countries:
     <ul>
@@ -44,7 +47,7 @@
     If in for:
     <ul>
         {{ for language in languages }}
-            <li>{{ if language }}If inside for loop{{ end }}</li>
+            <li>{{ if language.name == "Rust" }}Is Rust{{ else }}Is not Rust {{ end }}</li>
         {{ end }}
     </ul>
 </div>

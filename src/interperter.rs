@@ -1,9 +1,11 @@
+use std::cell::RefCell;
+
 use serde_json::{Value};
 
-use crate::{statement::{Statement}, expression::Expression};
+use crate::{statement::{Statement}, expression::Expression, TokenType};
 
 pub struct Interperter {
-    context_stack: Vec<Value>
+    context_stack: RefCell<Vec<Value>>
 }
 enum ValueOrStr<'a> {
     Value(serde_json::Value),
@@ -13,11 +15,11 @@ enum ValueOrStr<'a> {
 impl<'a> Interperter {
     pub fn new(context: Value) -> Self {
         Self {
-            context_stack: vec!(context)
+            context_stack: RefCell::new(vec!(context))
         }
     }
 
-    pub fn interpret(&mut self, statements: &Vec<Statement>) -> String {
+    pub fn interpret(&self, statements: &Vec<Statement>) -> String {
         let mut result = String::new();
         for statement in statements {
             println!("{:?}", statement);
@@ -45,7 +47,7 @@ impl<'a> Interperter {
     }
 
     fn get(&self, key: &[u8]) -> ValueOrStr {
-        for stack in self.context_stack.iter().rev() {
+        for stack in self.context_stack.borrow().iter().rev() {
             let value = &stack[std::str::from_utf8(key).unwrap()];
             if !value.is_null() {
                 return ValueOrStr::Value(value.clone());
@@ -58,17 +60,26 @@ impl<'a> Interperter {
     /// # Arguments
     /// 
     /// * `statement` - An Abstract Syntax Tree (AST) that represents a statement
-    fn execute(&'a mut self, statement: &'a Statement) -> ValueOrStr {
+    fn execute(&'a self, statement: &'a Statement) -> ValueOrStr {
         match statement {
             Statement::Expression(expression) => {
                 match expression {
-                    Expression::Variable(variable_expression) => {
-                        // the value from context_scope
-                        return self.get(variable_expression.name);
+                    Expression::Binary(binary_expression) => {
+                        let left = self.execute(&binary_expression.left);
+                        let right = self.execute(&binary_expression.right);
+                        let equality = Self::is_equals(&left, &right);
+                        if binary_expression.operator.token_type == TokenType::DoubleEquals {
+                            return ValueOrStr::Value(Value::Bool(equality));
+                        } else if binary_expression.operator.token_type == TokenType::ExclaimationEqual {
+                            return ValueOrStr::Value(Value::Bool(!equality));
+                        } else {
+                            todo!();
+                        }
                     }
-                    Expression::TemplateLiteral(template_literal_expression) => {
-                        // just the template literal
-                        return ValueOrStr::Str(template_literal_expression.value);
+                    Expression::Unary(unary_expression) => {
+                        let value = Self::is_truthy(self.execute(&unary_expression.right));
+                        assert_eq!(unary_expression.operator.token_type, TokenType::Exclaimation);
+                        ValueOrStr::Value(Value::Bool(!value))
                     }
                     Expression::Call(call_expression) => {
                         // recurse on callee
@@ -83,7 +94,24 @@ impl<'a> Interperter {
                         if !value.is_object() { 
                             panic!("{:?} is undefined", call_expression.name);
                         }
-                        return ValueOrStr::Value(value[std::str::from_utf8(call_expression.name).unwrap()].clone());
+                        ValueOrStr::Value(value[std::str::from_utf8(call_expression.name).unwrap()].clone())
+                    }
+                    Expression::Variable(variable_expression) => {
+                        // the value from context_scope
+                        self.get(variable_expression.name)
+                    }
+                    Expression::Literal(literal_expression) => {
+                        match literal_expression.token.token_type {
+                            TokenType::String => {
+                                let value = literal_expression.token.token_value;
+                                ValueOrStr::Str(&value[1 .. value.len() - 1])
+                            }
+                            _ => todo!(),
+                        }
+                    }
+                    Expression::TemplateLiteral(template_literal_expression) => {
+                        // just the template literal
+                        return ValueOrStr::Str(template_literal_expression.value);
                     }
                 }
             }
@@ -102,10 +130,10 @@ impl<'a> Interperter {
                 let mut result = String::new();
                 for i in array.as_array().unwrap() {
                     // add current array value to context_scope
-                    self.context_stack.push(serde_json::json!({std::str::from_utf8(for_statement.instance_identifier).unwrap(): i}));
+                    self.context_stack.borrow_mut().push(serde_json::json!({std::str::from_utf8(for_statement.instance_identifier).unwrap(): i}));
                     // interpret the block for each element in array
                     result.push_str(&self.interpret(&for_statement.statements));
-                    self.context_stack.pop();
+                    self.context_stack.borrow_mut().pop();
                 }
                 return ValueOrStr::Value(serde_json::Value::String(result));
             }
@@ -140,6 +168,31 @@ impl<'a> Interperter {
             }
         }
     }
+
+    fn is_equals(left: &ValueOrStr, right: &ValueOrStr) -> bool {
+        let left_string = match left {
+            ValueOrStr::Str(string) => string,
+            ValueOrStr::Value(value) => {
+                match value {
+                    Value::String(string) => string.as_bytes(),
+                    _ => todo!(),
+                }
+            }
+        };
+        let right_string = match right {
+            ValueOrStr::Str(string) => string,
+            ValueOrStr::Value(value) => {
+                match value {
+                    Value::String(string) => string.as_bytes(),
+                    _ => todo!(),
+                }
+            }
+        };
+        if left_string == right_string {
+            return true;
+        }
+        false
+    }
 }
 
 #[cfg(test)]
@@ -154,7 +207,7 @@ mod tests {
 // Yoo {{ for i in items }} name: {{ i.name }} {{ end }} | king: {{ person.name }}
 //         "#.as_bytes();
         let source = r#"
-Yoo {{ if not_Exists }} person exists {{ else }} person does not exist {{ end }}
+{{ for i in items }} {{ if !i.name }} {{ i.name }} {{ else }} Uhh John {{ end }} {{ end }}
         "#.as_bytes();
         let binding = Tokenizer::new(source);
         let tokens = binding.tokenize();
@@ -170,7 +223,7 @@ Yoo {{ if not_Exists }} person exists {{ else }} person does not exist {{ end }}
 // { "name": {"first": "Punit" } }
 //          "#).unwrap();
         //println!("{}", value["name"]);
-        let mut interperter = Interperter::new(value);
+        let interperter = Interperter::new(value);
         println!("{}", interperter.interpret(&statements));
         assert!(false);
     }
