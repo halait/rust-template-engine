@@ -155,7 +155,6 @@ impl<'a> Tokenizer<'a> {
                     if !self.is_previous(b'\\') && character == b'"' {
                         // eat quotes
                         self.increment();
-                        self.increment();
                         return self.tokenize_last(TokenType::String);
                     }
                 }

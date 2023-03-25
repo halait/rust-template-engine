@@ -207,7 +207,7 @@ mod tests {
 // Yoo {{ for i in items }} name: {{ i.name }} {{ end }} | king: {{ person.name }}
 //         "#.as_bytes();
         let source = r#"
-Yoo {{ if !"" }}here{{ end }}
+Yoo {{ "here" }}
         "#.as_bytes();
         let binding = Tokenizer::new(source);
         let tokens = binding.tokenize();
