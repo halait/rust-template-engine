@@ -1,3 +1,5 @@
+use std::{fs, path::Path, io::Write};
+
 use parser::Parser;
 use serde_json::Value;
 use tokenizer::Tokenizer;
@@ -39,6 +41,22 @@ pub fn render(source: &str, context_json: &str) -> String {
     interperter.interpret(&statements)
 }
 
+pub fn render_file<P>(source: P, context_json_path: P) where
+P: AsRef<Path> {
+    let source = fs::read_to_string(&source)
+        .expect("Should have been able to read the file");
+    let json = fs::read_to_string(&context_json_path)
+        .expect("Should have been able to read the file");
+    let output = render(&source, &json);
+    println!("{}", &output);
+    let path = Path::new(&source);
+    let file_stem = path.file_stem().expect("Unable to parse source filename");
+    let extension = path.extension().expect("Unable to parse source file extension");
+    let mut file = fs::File::create([file_stem.to_str().unwrap(), "_yartle_out.", extension.to_str().unwrap()].join(""))
+        .expect("Error writing file");
+    file.write_all(output.as_bytes()).unwrap();
+}
+
 #[derive(PartialEq, Debug, Copy, Clone)]
 enum TokenType {
     LeftDoubleBrackets,
@@ -70,5 +88,6 @@ mod tests {
 
     // #[test]
     // fn it_works() {
+        
     // }
 }

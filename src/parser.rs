@@ -155,6 +155,7 @@ impl<'a, 'b> Parser<'a> {
         Expression::Literal(expression::LiteralExpression { token })
     }
 
+    /// Returns Abstract Syntax Tree (AST) for current for loop, expects current token to be TokenType::For
     fn parse_for(&self) -> Statement {
         self.expect(TokenType::For);
         self.on(TokenType::Identifier);
@@ -174,6 +175,7 @@ impl<'a, 'b> Parser<'a> {
         })
     }
 
+    /// Returns Abstract Syntax Tree (AST) for current if loop, expects current token to be TokenType::If
     fn parse_if(&self) -> Statement {
         self.expect(TokenType::If);
         let condition = Box::new(Statement::Expression(self.parse_expression()));
