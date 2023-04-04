@@ -63,7 +63,7 @@ impl<'a, 'b> Parser<'a> {
 
     fn parse_statement(&self) -> Option<Statement> {
         match self.current_token()?.token_type {
-            TokenType::LeftDoubleBrackets => {
+            TokenType::DoubleLeftBrackets => {
                 match self.next_token()?.token_type {
                     TokenType::For => Some(self.parse_for()),
                     TokenType::If => Some(self.parse_if()),
@@ -72,7 +72,7 @@ impl<'a, 'b> Parser<'a> {
                     TokenType::Else => None,
                     _ => {
                         let statement = Some(Statement::Expression(self.parse_expression()));
-                        self.expect(TokenType::RightDoubleBrackets);
+                        self.expect(TokenType::DoubleRightBrackets);
                         statement
                     }
                 }
@@ -91,8 +91,40 @@ impl<'a, 'b> Parser<'a> {
     }
 
     fn parse_expression(&self) -> Expression {
-        self.parse_equality()
+        self.parse_or()
     }
+
+    fn parse_or(&self) -> Expression {
+        let mut left = self.parse_and();
+        while self.is_on(TokenType::DoublePipe) {
+            let operator = self.current_token().unwrap();
+            self.next_token();
+            let right = Box::new(Statement::Expression(self.parse_and()));
+            left = Expression::Binary(BinaryExpression {
+                left: Box::new(Statement::Expression(left)),
+                operator,
+                right
+            });
+        }
+        left
+    }
+
+    fn parse_and(&self) -> Expression {
+        let mut left = self.parse_equality();
+        while self.is_on(TokenType::DoubleAmpersand) {
+            let operator = self.current_token().unwrap();
+            self.next_token();
+            let right = Box::new(Statement::Expression(self.parse_equality()));
+            left = Expression::Binary(BinaryExpression {
+                left: Box::new(Statement::Expression(left)),
+                operator,
+                right
+            });
+        }
+        left
+    }
+
+
 
     fn parse_equality(&self) -> Expression {
         let mut left = self.parse_unary();
@@ -164,10 +196,10 @@ impl<'a, 'b> Parser<'a> {
         self.expect(TokenType::In);
         self.on(TokenType::Identifier);
         let array_variable = self.parse_call();
-        self.expect(TokenType::RightDoubleBrackets);
+        self.expect(TokenType::DoubleRightBrackets);
         let statements = self.parse();
         self.expect(TokenType::End);
-        self.expect(TokenType::RightDoubleBrackets);
+        self.expect(TokenType::DoubleRightBrackets);
         Statement::For(statement::ForStatement{
             instance_identifier: instance_identifier,
             array_variable: Box::new(Statement::Expression(array_variable)),
@@ -179,16 +211,16 @@ impl<'a, 'b> Parser<'a> {
     fn parse_if(&self) -> Statement {
         self.expect(TokenType::If);
         let condition = Box::new(Statement::Expression(self.parse_expression()));
-        self.expect(TokenType::RightDoubleBrackets);
+        self.expect(TokenType::DoubleRightBrackets);
         let if_statements = self.parse();
         let mut else_statements: Vec<Statement> = Vec::new();
         if self.is_on(TokenType::Else) {
             self.next_token();
-            self.expect(TokenType::RightDoubleBrackets);
+            self.expect(TokenType::DoubleRightBrackets);
             else_statements = self.parse();
         }
         self.expect(TokenType::End);
-        self.expect(TokenType::RightDoubleBrackets);
+        self.expect(TokenType::DoubleRightBrackets);
         Statement::If(statement::IfStatement {
             condition,
             if_statements,

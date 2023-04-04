@@ -67,11 +67,22 @@ impl<'a> Interperter {
                     Expression::Binary(binary_expression) => {
                         let left = self.execute(&binary_expression.left);
                         let right = self.execute(&binary_expression.right);
-                        let equality = Self::is_equals(&left, &right);
                         if binary_expression.operator.token_type == TokenType::DoubleEquals {
-                            return ValueOrStr::Value(Value::Bool(equality));
+                            return ValueOrStr::Value(Value::Bool(Self::is_equals(&left, &right)));
                         } else if binary_expression.operator.token_type == TokenType::ExclaimationEqual {
-                            return ValueOrStr::Value(Value::Bool(!equality));
+                            return ValueOrStr::Value(Value::Bool(!Self::is_equals(&left, &right)));
+                        } else if binary_expression.operator.token_type == TokenType::DoublePipe {
+                            if Self::is_truthy(left) || Self::is_truthy(right) {
+                                ValueOrStr::Value(Value::Bool(true))
+                            } else {
+                                ValueOrStr::Value(Value::Bool(false))
+                            }
+                        } else if binary_expression.operator.token_type == TokenType::DoubleAmpersand {
+                            if Self::is_truthy(left) && Self::is_truthy(right) {
+                                ValueOrStr::Value(Value::Bool(true))
+                            } else {
+                                ValueOrStr::Value(Value::Bool(false))
+                            }
                         } else {
                             todo!();
                         }
@@ -207,7 +218,7 @@ mod tests {
 // Yoo {{ for i in items }} name: {{ i.name }} {{ end }} | king: {{ person.name }}
 //         "#.as_bytes();
         let source = r#"
-Yoo {{ "here" }}
+Yoo {{ "here" }} {{ if "yea" && items && fds }}true{{ else }}false{{ end }}
         "#.as_bytes();
         let binding = Tokenizer::new(source);
         let tokens = binding.tokenize();

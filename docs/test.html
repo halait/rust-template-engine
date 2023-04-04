@@ -21,6 +21,10 @@
     <li>{{ if name.last == "Haaalait" }}Fail{{ else }}Pass{{ end }} - comparison false</li>
     <li>{{ if name.last != "Halait" }}Fail{{ else }}Pass{{ end }} - comparison not equals</li>
     <li>{{ if name.last != "Halait" }}Fail{{ else }}{{ if name.first }}Pass{{ else }}Fail{{ end }}{{ end }} - nested if</li>
+    <li>{{ if does_not_exist || name }}Pass{{ end }} - or</li>
+    <li>{{ if name && name.first == "Punit" }}Pass{{ end }} - and</li>
+    <li>{{ if does_not_exist || name.first == "Not Punit" }}Fail{{ else }}Pass{{ end }} - or false</li>
+    <li>{{ if does_not_exist && name.first == "Not Punit" }}Fail{{ else }}Pass{{ end }} - and false</li>
 </ul>
 <h2>For Tests</h2>
 <div>
@@ -55,6 +59,14 @@
     <ul>
         {{ for language in languages }}
             <li>{{ if language.name == "Rust" }}Is Rust{{ else }}Is not Rust {{ end }}</li>
+        {{ end }}
+    </ul>
+</div>
+<div>
+    Nested array:
+    <ul>
+        {{ for item in nested.array }}
+            <li>{{ item }}</li>
         {{ end }}
     </ul>
 </div>

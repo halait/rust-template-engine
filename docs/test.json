@@ -16,5 +16,8 @@
     ],
     "what": {
         "this": {"is": "document"}
+    },
+    "nested": {
+        "array": [1, 2, 3]
     }
 }

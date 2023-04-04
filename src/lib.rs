@@ -21,13 +21,16 @@ statement = template_literal
             | '{{' expression '}}'
             | for
             | if
-expression = equality
-eqaulity = unary {( ('!=' | '==' ) unary )}
+expression = or
+or = and { '||' and }
+and = equality { '&&' equality }
+equality = unary {( ('!=' | '==' ) unary )}
 unary = ['!'] call 
-for = '{{' 'for' identifier 'in' call '}}' statement '{{' 'end' '}}'
-if = '{{' if expression '}}' { statement } [ '{{' else '}}'  { statement }] '{{' end '}}'
 call = ( identifier { '.' identifier } ) | literal
 literal = string
+
+for = '{{' 'for' identifier 'in' call '}}' statement '{{' 'end' '}}'
+if = '{{' if expression '}}' { statement } [ '{{' else '}}'  { statement }] '{{' end '}}'
 */
 
 #[wasm_bindgen]
@@ -59,8 +62,8 @@ P: AsRef<Path> {
 
 #[derive(PartialEq, Debug, Copy, Clone)]
 enum TokenType {
-    LeftDoubleBrackets,
-    RightDoubleBrackets,
+    DoubleLeftBrackets,
+    DoubleRightBrackets,
     For,
     In,
     If,
@@ -73,7 +76,9 @@ enum TokenType {
     End,
     DoubleEquals,
     ExclaimationEqual,
-    Exclaimation
+    Exclaimation,
+    DoubleAmpersand,
+    DoublePipe
 }
 
 #[derive(PartialEq, Debug, Copy, Clone)]
