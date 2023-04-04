@@ -15,7 +15,7 @@ impl<'a, 'b> Parser<'a> {
     fn next_token(&self) -> Option<&Token> {
         let old = *self.i.borrow();
         self.i.replace(old + 1);
-        println!("Next token: {:?}", self.current_token());
+        // println!("Next token: {:?}", self.current_token());
         self.current_token()
     }
 

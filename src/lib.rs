@@ -44,15 +44,14 @@ pub fn render(source: &str, context_json: &str) -> String {
     interperter.interpret(&statements)
 }
 
-pub fn render_file<P>(source: P, context_json_path: P) where
-P: AsRef<Path> {
-    let source = fs::read_to_string(&source)
+pub fn render_file(source_path: &str, context_json_path: &str) {
+    let source = fs::read_to_string(&source_path)
         .expect("Should have been able to read the file");
     let json = fs::read_to_string(&context_json_path)
         .expect("Should have been able to read the file");
     let output = render(&source, &json);
     println!("{}", &output);
-    let path = Path::new(&source);
+    let path = Path::new(&source_path);
     let file_stem = path.file_stem().expect("Unable to parse source filename");
     let extension = path.extension().expect("Unable to parse source file extension");
     let mut file = fs::File::create([file_stem.to_str().unwrap(), "_yartle_out.", extension.to_str().unwrap()].join(""))

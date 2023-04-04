@@ -17,7 +17,7 @@
     <li>{{ if !name }}Fail{{ else }}Pass{{ end }} - negated</li>
     <li>{{ if does_not_exist }}Fail{{ else }}Pass{{ end }} - null is falsy</li>
     <li>{{ if "" }}Fail{{ else }}Pass{{ end }} - empty string is falsy</li>
-    <li>{{ if name.first == "Punit" }}Pass{{ else }}Fail{{ end }}  - comparison</li>
+    <li>{{ if name.first == "Punit" }}Pass{{ else }}Fail{{ end }} - comparison</li>
     <li>{{ if name.last == "Haaalait" }}Fail{{ else }}Pass{{ end }} - comparison false</li>
     <li>{{ if name.last != "Halait" }}Fail{{ else }}Pass{{ end }} - comparison not equals</li>
     <li>{{ if name.last != "Halait" }}Fail{{ else }}{{ if name.first }}Pass{{ else }}Fail{{ end }}{{ end }} - nested if</li>

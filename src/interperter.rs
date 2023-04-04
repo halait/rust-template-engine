@@ -22,7 +22,7 @@ impl<'a> Interperter {
     pub fn interpret(&self, statements: &Vec<Statement>) -> String {
         let mut result = String::new();
         for statement in statements {
-            println!("{:?}", statement);
+            // println!("{:?}", statement);
             result.push_str(&Self::to_string(self.execute(statement)));
         }
         result
