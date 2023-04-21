@@ -1,3 +1,5 @@
+// Used for formatting errors, experimental implementation, to be changed.
+
 // struct ByteLocation<'a> {
 //     line_number: usize,
 //     column_number: usize,

@@ -9,13 +9,3 @@ fn main() {
     }
     render_file(&args[1], &args[2]);
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn it_works() {
-        main();
-    }
-}

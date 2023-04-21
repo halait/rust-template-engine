@@ -2,16 +2,23 @@ use std::{cell::RefCell};
 
 use crate::{Token, TokenType, statement::{Statement, self}, expression::{Expression, self, UnaryExpression, BinaryExpression}};
 
+/// Creates AST with given tokens
 pub struct Parser<'a> {
+    // TODO: do not hold refrence, take as argument?
     tokens: &'a Vec<Token<'a>>,
     i: RefCell<usize>
 }
 
 impl<'a, 'b> Parser<'a> {
+    /// Returns parser, to be used to create AST from `tokens`
+    /// 
+    /// # Arguments
+    /// `tokens` - tokens to be parsed
     pub fn new(tokens: &'a Vec<Token>) -> Self {
         Parser { tokens, i: RefCell::new(0) }
     }
 
+    /// Increments parser to next token and returns it
     fn next_token(&self) -> Option<&Token> {
         let old = *self.i.borrow();
         self.i.replace(old + 1);
@@ -24,11 +31,21 @@ impl<'a, 'b> Parser<'a> {
         if self.tokens.len() <= *i { None } else { Some(&self.tokens[*i]) }
     }
 
+    /// Checks if currently on given `TokenType`, increments parser if yes, panics if not
+    /// 
+    /// # Arguments
+    /// 
+    /// * `token_type` - expected current `TokenType`
     fn expect(&self, token_type: TokenType) {
         self.on(token_type);
         self.next_token();
     }
 
+    /// Checks if currently on given `TokenType`, panics if not
+    /// 
+    /// # Arguments
+    /// 
+    /// * `token_type` - expected current `TokenType`
     fn on(&self, token_type: TokenType) {
         let token = self.current_token().expect(&format!("Unexpected end of input, expected token: {:?}", token_type));
         if token.token_type != token_type {
@@ -36,6 +53,11 @@ impl<'a, 'b> Parser<'a> {
         }
     }
 
+    /// Returns true if parser is currently on given `TokenType`, else false
+    /// 
+    /// # Arguments
+    /// 
+    /// * `token_type` - the `TokenType` to compare to
     fn is_on(&self, token_type: TokenType) -> bool {
         let token = self.current_token().expect(&format!("Unexpected end of input, expected more tokens"));
         if token.token_type != token_type {
@@ -44,6 +66,7 @@ impl<'a, 'b> Parser<'a> {
         true
     }
 
+    /// Parses tokens refrenceced by instance, returns `Vec::<Statement>` that represent a series of ASTs
     pub fn parse(&self) -> Vec::<Statement> {
         let mut statements: Vec::<Statement> = Vec::new();
         loop {
@@ -61,6 +84,7 @@ impl<'a, 'b> Parser<'a> {
         }
     }
 
+    /// Parse starting at current token, convert to AST, Option::None if at end of lexical statement  
     fn parse_statement(&self) -> Option<Statement> {
         match self.current_token()?.token_type {
             TokenType::DoubleLeftBrackets => {
@@ -90,10 +114,12 @@ impl<'a, 'b> Parser<'a> {
         }
     }
 
+    /// Parse expression starting at current token
     fn parse_expression(&self) -> Expression {
         self.parse_or()
     }
 
+    /// Parse or expression starting at current token
     fn parse_or(&self) -> Expression {
         let mut left = self.parse_and();
         while self.is_on(TokenType::DoublePipe) {
@@ -109,6 +135,7 @@ impl<'a, 'b> Parser<'a> {
         left
     }
 
+    /// Parse and expression starting at current token
     fn parse_and(&self) -> Expression {
         let mut left = self.parse_equality();
         while self.is_on(TokenType::DoubleAmpersand) {
@@ -124,8 +151,7 @@ impl<'a, 'b> Parser<'a> {
         left
     }
 
-
-
+    /// Parse equality expression starting at current token
     fn parse_equality(&self) -> Expression {
         let mut left = self.parse_unary();
         while self.is_on(TokenType::DoubleEquals) || self.is_on(TokenType::ExclaimationEqual) {
@@ -141,6 +167,7 @@ impl<'a, 'b> Parser<'a> {
         left
     }
 
+    /// Parse unary expression starting at current token
     fn parse_unary(&self) -> Expression {
         if self.is_on(TokenType::Exclaimation) {
             let operator = self.current_token().unwrap().clone();
@@ -153,6 +180,7 @@ impl<'a, 'b> Parser<'a> {
         self.parse_call()
     }
 
+    /// Parse call expression starting at current token
     fn parse_call(&self) -> Expression {
         if self.is_on(TokenType::Identifier) {
             let mut expression = self.parse_identifier();
@@ -171,6 +199,7 @@ impl<'a, 'b> Parser<'a> {
         self.parse_literal()
     }
 
+    /// Parse identifier expression starting at current token
     fn parse_identifier(&self) -> Expression {
         self.on(TokenType::Identifier);
         let expression = Expression::Variable(expression::VariableExpression {
@@ -180,6 +209,7 @@ impl<'a, 'b> Parser<'a> {
         expression
     }
 
+    /// Parse literal expression starting at current token, only works for string literal currently
     fn parse_literal(&self) -> Expression {
         self.on(TokenType::String);
         let token = self.current_token().unwrap().clone();
@@ -187,7 +217,7 @@ impl<'a, 'b> Parser<'a> {
         Expression::Literal(expression::LiteralExpression { token })
     }
 
-    /// Returns Abstract Syntax Tree (AST) for current for loop, expects current token to be TokenType::For
+    /// Parse for statement starting at current token, only works for string literal currently
     fn parse_for(&self) -> Statement {
         self.expect(TokenType::For);
         self.on(TokenType::Identifier);
@@ -207,7 +237,7 @@ impl<'a, 'b> Parser<'a> {
         })
     }
 
-    /// Returns Abstract Syntax Tree (AST) for current if loop, expects current token to be TokenType::If
+    /// Parse if statement starting at current token, only works for string literal currently
     fn parse_if(&self) -> Statement {
         self.expect(TokenType::If);
         let condition = Box::new(Statement::Expression(self.parse_expression()));

@@ -2,18 +2,17 @@ use std::cell::RefCell;
 
 use crate::{Token, TokenType, message_formatter};
 
+/// Tokenizes given source code
 pub struct Tokenizer<'a> {
-    // current index
+    /// current index
     i: RefCell<usize>,
     token_start: RefCell<usize>,
-    // source code
+    /// source code
     source: &'a [u8],
-    // resultant tokens
-    // pub tokens: Vec<Token<'a>>,
     alphabetic_token_map: std::collections::HashMap<&'static [u8], TokenType>,
-    // token_map: std::collections::HashMap<&'static [u8], TokenType>,
     in_curly: RefCell<bool>
 }
+
 impl<'a> Tokenizer<'a> {
     const TOKEN_MAP: [(&[u8], TokenType); 8] = [
         ("{{".as_bytes(), TokenType::DoubleLeftBrackets),
@@ -26,13 +25,16 @@ impl<'a> Tokenizer<'a> {
         ("||".as_bytes(), TokenType::DoublePipe)
     ];
 
-
+    /// Returns a tokenizer used to tokenize `source`
+    /// 
+    /// # Arguments
+    /// 
+    /// * `source` - the text to tokenize
     pub fn new(source: &'a [u8]) -> Self {
         Self {
             i: RefCell::new(0),
             token_start: RefCell::new(0),
             source: source,
-            // tokens: Vec::new(),
             alphabetic_token_map: std::collections::HashMap::from([
                 ("for".as_bytes(), TokenType::For),
                 ("in".as_bytes(), TokenType::In),
@@ -41,20 +43,11 @@ impl<'a> Tokenizer<'a> {
                 ("else".as_bytes(), TokenType::Else),
                 ("end".as_bytes(), TokenType::End),
             ]),
-            // token_map: std::collections::HashMap::from([
-            //     ("{{".as_bytes(), TokenType::DoubleLeftBrackets),
-            //     ("}}".as_bytes(), TokenType::DoubleRightBrackets),
-            //     (".".as_bytes(), TokenType::Dot),
-            //     ("==".as_bytes(), TokenType::DoubleEquals),
-            //     ("!=".as_bytes(), TokenType::ExclaimationEqual),
-            //     ("!".as_bytes(), TokenType::Exclaimation),
-            //     ("&&".as_bytes(), TokenType::DoubleAmpersand),
-            //     ("||".as_bytes(), TokenType::DoublePipe)
-            // ]),
             in_curly: RefCell::new(false)
         }
     }
 
+    /// Returns tokens of refrenced text
     pub fn tokenize(&self) -> Vec<Token> {
         let mut tokens: Vec<Token> = Vec::new();
         let mut token = self.next();
@@ -65,6 +58,7 @@ impl<'a> Tokenizer<'a> {
         tokens
     }
 
+    /// Returns `Option::Some` with current `u8`, if at EOF returns `Option::None`
     fn get_current(&self) -> Option<u8> {
         if *self.i.borrow() == self.source.len() {
             return None;
@@ -72,24 +66,19 @@ impl<'a> Tokenizer<'a> {
         Some(self.source[*self.i.borrow()])
     }
 
+    /// Increments parser to next `u8` and retuens Option::Some with it, if at EOF returns `Option::None`
     fn increment(&self) -> Option<u8> {
         let new = *self.i.borrow() + 1;
         self.i.replace(new);
         self.get_current()
     }
-
-    // fn is_on(&self, character: u8) -> bool {
-    //     match self.get_current() {
-    //         Some(i) => if i == character {true} else {false}
-    //         None => false
-    //     }
-    // }
-
+    
+    /// Returns true if currently on `characters` starting at current index else false
+    /// 
+    /// # Arguments
+    /// 
+    /// * `characters` - the characters to check for
     fn is_on(&self, characters: &[u8]) -> bool {
-        // match self.get_current() {
-        //     Some(i) => if i == characters {true} else {false}
-        //     None => false
-        // }
         let mut i = self.i.borrow().clone();
         for character in characters {
             if i >= self.source.len() {
@@ -103,13 +92,11 @@ impl<'a> Tokenizer<'a> {
         return true;
     }
 
-    // fn is_next(&self, character: u8) -> bool {
-    //     match self.peek() {
-    //         None => false,
-    //         Some(next_character) => if character == next_character {true} else {false}
-    //     }
-    // }
-
+    /// Returns true if last index in parser was equal to `character`
+    /// 
+    /// # Arguements
+    /// 
+    /// * `character` - the character to be checked
     fn is_previous(&self, character: u8) -> bool {
         let current = *self.i.borrow();
         if current == 0 {
@@ -120,35 +107,24 @@ impl<'a> Tokenizer<'a> {
             false
         }
     }
-
-
+    
+    /// Returns text of token parser is currently on, ends at current index
     fn get_last_token(&self) -> &[u8] {
         &self.source[*self.token_start.borrow() .. *self.i.borrow()]
     }
 
+    /// Returns token parser is currently on, ends at current index
+    /// 
+    /// # Arguments
+    /// * `token_type` - the type of the `Token` to be returned
     fn tokenize_last(&self, type_type: TokenType) -> Token {
         Token {
             token_type: type_type,
             token_value: self.get_last_token()
         }
     }
-
-    // fn peek(&self) -> Option<u8> {
-    //     let next = *self.i.borrow() + 1;
-    //     if next >= self.source.len() {
-    //         return None;
-    //     }
-    //     Some(self.source[next])
-    // }
-
-    // fn at_curly_start(&self) -> bool {
-    //     if self.is_on(b'{') && self.is_next(b'{') {
-    //         true
-    //     } else {
-    //         false
-    //     }
-    // }
-
+    
+    /// Tokenizes template string parser is currently on
     fn tokenize_template_string(&self) -> Token {
         loop {
             match self.increment() {
@@ -164,10 +140,16 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
+    /// Gets type of token represented by `symbol`, must be alphabetic
+    /// 
+    /// # Arguments
+    /// 
+    /// * `symbol` - alphabetic symbol to get `TokenType` for
     fn get_symbol_token_type(&self, symbol: &[u8]) -> TokenType {
         self.alphabetic_token_map.get(symbol).unwrap_or(&TokenType::Identifier).clone()
     }
 
+    /// Tokenizes alphabetic symbol parser is currently on
     fn tokenize_symbol(&self) -> Token {
         loop {
             match self.increment() {
@@ -183,6 +165,7 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
+    /// Tokenizes string literal parser is currently on, double quotes (") in string can be escaped with backslash (\)
     fn tokenize_string_literal(&self) -> Token {
         loop {
             match self.increment() {
@@ -200,6 +183,7 @@ impl<'a> Tokenizer<'a> {
         }
     }
 
+    /// Returns Option::Some with next token in refrenced `[u8]`, or Option::None if at end
     pub fn next(&self) -> Option<Token> {
         loop {
             self.token_start.replace(*self.i.borrow());
@@ -235,29 +219,6 @@ impl<'a> Tokenizer<'a> {
                             }
                             panic!("{}", message_formatter::format(&self.source, *self.i.borrow(), "Invalid character"));
                         }
-                        // } else if character == b'.' {
-                        //     self.increment();
-                        //     return Some(self.tokenize_last(TokenType::Dot));
-                        // } else if self.is_on("==".as_bytes()) {
-                        //     self.increment();
-                        //     self.increment();
-                        //     return Some(self.tokenize_last(TokenType::DoubleEquals));
-                        // } else if character == b'!' && self.is_next(b'=') {
-                        //     self.increment();
-                        //     self.increment();
-                        //     return Some(self.tokenize_last(TokenType::ExclaimationEqual));
-                        // } else if character == b'}' && self.is_next(b'}') {
-                        //     self.in_curly.replace(false);
-                        //     // skip curly
-                        //     self.increment();
-                        //     self.increment();
-                        //     return Some(self.tokenize_last(TokenType::DoubleRightBrackets));
-                        // } else if character == b'!' {
-                        //     self.increment();
-                        //     return Some(self.tokenize_last(TokenType::Exclaimation));
-                        // } else {
-                        //     panic!("{}", message_formatter::format(&self.source, *self.i.borrow(), "Invalid character"));
-                        // }
                     }
                 },
                 None => {

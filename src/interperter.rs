@@ -4,21 +4,33 @@ use serde_json::{Value};
 
 use crate::{statement::{Statement}, expression::Expression, TokenType};
 
+/// Interprets AST
 pub struct Interperter {
+    // TODO: can &Value be used?
     context_stack: RefCell<Vec<Value>>
 }
+// &[u8] is used to avoid cloning
 enum ValueOrStr<'a> {
     Value(serde_json::Value),
     Str(&'a [u8])
 }
 
 impl<'a> Interperter {
+    /// Returns an interperter with given context
+    /// 
+    /// # Arguments
+    /// 
+    /// * `context` - the context of the template
     pub fn new(context: Value) -> Self {
         Self {
             context_stack: RefCell::new(vec!(context))
         }
     }
-
+    /// Interprets given statements returning resulting String
+    /// 
+    /// # Arguments
+    ///
+    /// * `statements` - Abstract Syntax Tree (AST) Vector to be interpreted
     pub fn interpret(&self, statements: &Vec<Statement>) -> String {
         let mut result = String::new();
         for statement in statements {
@@ -27,8 +39,12 @@ impl<'a> Interperter {
         }
         result
     }
-    // TODO: Return &str?
+    
+    /// Converts all ValueOrStr values to string represtation
+    /// Value::Null converts to "null"
+    /// Value::Number converts to base10 string representation
     fn to_string(value_or_str: ValueOrStr) -> String {
+        // TODO: Return &str?
         match value_or_str {
             ValueOrStr::Value(value) => {
                 if value.is_string() {
@@ -46,6 +62,12 @@ impl<'a> Interperter {
         
     }
 
+    /// Returns the value of the key from current context_stack, starts with top of stack and moves down
+    /// returns Value::Null if not found
+    /// 
+    /// # Arguments
+    /// 
+    /// * `key` - the key to search for
     fn get(&self, key: &[u8]) -> ValueOrStr {
         for stack in self.context_stack.borrow().iter().rev() {
             let value = &stack[std::str::from_utf8(key).unwrap()];
@@ -160,6 +182,13 @@ impl<'a> Interperter {
         }
     }
 
+    /// Returns true if given value is truthy else falsy
+    /// Value::Null, Value::Number(0), Value::String(""), Value::Array(array) of len 0, Value::Bool(false), 
+    /// str of length 0 are falsy, all other ValueOrStr are truthy
+    /// 
+    /// # Arguments
+    /// 
+    /// * `value_or_str` - the value to evaluate
     fn is_truthy(value_or_str: ValueOrStr) -> bool {
         match value_or_str {
             ValueOrStr::Value(value) => {
@@ -180,6 +209,8 @@ impl<'a> Interperter {
         }
     }
 
+    /// Return true if `left` and `right` are equal
+    /// implementation unstable (to be changed)
     fn is_equals(left: &ValueOrStr, right: &ValueOrStr) -> bool {
         let left_string = match left {
             ValueOrStr::Str(string) => string,
